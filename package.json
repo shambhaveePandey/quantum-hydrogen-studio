@@ -11,13 +11,13 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "three": "^r128",
+    "three": ">=0.150.0",
     "plotly.js-dist-min": "^2.26.0",
     "mathjs": "^12.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "@types/three": "^r128",
+    "@types/three": ">=0.150.0",
     "typescript": "^5.4.0",
     "vite": "^5.2.0",
     "vite-plugin-glsl": "^1.1.0"
