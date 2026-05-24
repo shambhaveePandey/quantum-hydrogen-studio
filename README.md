@@ -1,139 +1,132 @@
 # ⚛️ Quantum Hydrogen Studio
 
-> An interactive web application for visualising elementary particles, quantum orbitals, and force field theories of the hydrogen atom — built for scientists, students, and the curious.
+> An interactive 3D web application for exploring the hydrogen atom — its particles, quantum orbitals, and fundamental force fields.
 
-[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Built with Three.js](https://img.shields.io/badge/3D-Three.js-black)](https://threejs.org/)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-orange.svg)](#contributing)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Build-Vite-646cff)](https://vitejs.dev/)
 
 ---
 
-## 🌌 Overview
+## Overview
 
-**Quantum Hydrogen Studio** is a browser-based 3D visualisation platform focused on the hydrogen atom — the simplest and most studied system in quantum mechanics. Rather than a static textbook diagram, this app renders the atom as a living, interactive model where users can inspect every elementary particle it contains, observe their properties and motion in real time, and switch between established quantum mechanical models and proposed theoretical extensions.
+**Quantum Hydrogen Studio** is a browser-based 3D visualisation platform built around the hydrogen atom. It renders the atom as a live, interactive scene using Three.js WebGL, letting you orbit the scene freely, adjust quantum numbers, and toggle force field overlays — all in real time.
 
-The hydrogen atom is the perfect entry point: one proton, one electron, and an electromagnetic field binding them together — yet this single system encodes the foundations of the Standard Model, quantum field theory, and some of the most intriguing open questions in physics.
-
----
-
-## 🧪 Core Features
-
-### 1. Elementary Particle Explorer
-- **Full particle inventory** of the hydrogen atom rendered in 3D:
-  - **Electron** — visualised as a probability cloud / wave function with adjustable quantum numbers (n, l, m)
-  - **Proton** — rendered as a composite particle, showing its constituent **up quarks (×2)** and **down quark (×1)**, bound by **gluons**
-  - **Photons** — virtual photon exchange between electron and proton visualised as dynamic force carriers
-  - **Gluons** — shown as colour-charged flux tubes connecting quarks inside the proton
-- Clicking any particle opens a **properties panel** showing:
-  - Mass, charge, spin, colour charge (for quarks/gluons)
-  - Quantum numbers where applicable
-  - Role in the Standard Model
-
-### 2. Motion & Spin Visualisation
-- **Electron orbital motion** — animated probability density across all hydrogen orbitals (1s, 2s, 2p, 3d, etc.), rendered as volumetric point clouds
-- **Quark confinement jiggling** — stochastic motion of quarks inside the proton, reflecting QCD colour confinement
-- **Spin vectors** — rendered as animated arrows on each particle, showing intrinsic angular momentum (½ for quarks and electron, 1 for photons and gluons)
-- **Proton spin decomposition** — toggle between naive quark model spin and QCD sea quark / gluon spin contributions (the "proton spin crisis" visualised)
-
-### 3. Quantum Orbital Viewer
-- Render any hydrogen orbital by entering quantum numbers **(n, l, m)**
-- Switch between:
-  - **Wave function phase** (colour-coded by sign/complex phase)
-  - **Probability density** |ψ|² as a 3D point cloud
-  - **Radial probability distribution** chart overlay
-- Animate superpositions of two orbitals to observe interference and beat patterns
-- Export current orbital as a PNG screenshot
-
-### 4. Standard Model Context Panel
-- A side panel classifying all particles present in the scene within the **Standard Model taxonomy**:
-  - Fermions (quarks, leptons) vs Bosons (gauge bosons, Higgs)
-  - Generation, isospin, and colour charge columns
-  - Animated Feynman diagram of the dominant interaction (electron ↔ proton via γ exchange)
-
-### 5. Force Field Theory Modes *(Theory Lab)*
-Switch the entire scene into alternative or extended theoretical frameworks. Each mode is **clearly labelled as theoretical/speculative** with references:
-
-| Mode | What Changes | Status |
-|------|-------------|--------|
-| **QED (default)** | Electromagnetic field lines, virtual photon exchange | Established |
-| **QCD Flux Tubes** | Colour confinement strings between quarks rendered explicitly | Established |
-| **Electroweak Unified** | W/Z bosons shown at high-energy limit; symmetry restoration visualised | Established |
-| **Kaluza–Klein** | Extra compact spatial dimension added to field geometry; field lines curve through a 5th axis | Proposed |
-| **String Theory Mode** | Quarks replaced by vibrating 1D strings; vibrational modes mapped to particle properties | Proposed |
-| **Loop Quantum Gravity** | Space around the atom is quantised into a spin network; geometry is discrete | Proposed |
-| **Dark Sector Coupling** | A hypothetical dark photon mediator shown coupling weakly to the electron | Speculative |
-
-> ⚠️ All Theory Lab modes are clearly labelled with their scientific status and include citations to foundational papers.
+The hydrogen atom is the perfect entry point: one proton, one electron, and an electromagnetic field binding them together, yet this single system encodes the foundations of the Standard Model and quantum mechanics.
 
 ---
 
-## 🎛️ UI / UX Design
+## Features
 
-- **Dark-first interface** with a space-black background and particle-colour accent system
-- **Scene controls**: orbit, zoom, pan via mouse/touch; reset to canonical view
-- **Info overlays** toggle on/off per-particle or globally
-- **Annotation layer**: label force field lines, orbital lobes, spin vectors independently
-- **Timeline scrubber**: step through a virtual interaction event (e.g., photon absorption and re-emission)
-- **Responsive**: works on desktop and tablet; mobile view shows simplified 2D orbital slice
+### Interactive 3D Viewer
+- Full orbit, zoom, and pan via mouse or touch (Three.js `OrbitControls`)
+- Inertia / damping for smooth camera movement
+- X / Y / Z axis reference lines (red / green / blue) centred on the nucleus
+- Opaque deep-space background; scene is always visible regardless of panel colour
+
+### Hydrogen Atom Visualisation
+| Element | Representation |
+|---------|----------------|
+| **Proton** (nucleus) | Red emissive sphere at the origin |
+| **Electron** | Blue emissive sphere at a quantum-mechanically sampled position |
+| **Orbital cloud** | 1 000-point probability-density point cloud (1s distribution by default) |
+| **Probability shells** | Three concentric wireframe spheres at 0.5, 1.0, 1.5 Å representing radial probability |
+
+### Quantum State Controls (left panel)
+- **Principal quantum number n** (1 – 5)
+- **Angular momentum l** (0 – n−1, constrained automatically)
+- **Magnetic quantum number m** (−l – l, constrained automatically)
+- Changing any slider re-samples the electron position and re-renders the orbital cloud using the correct hydrogen wave-function scaling
+
+### Force Field Visualisation
+Five force types, each with distinct colour-coded field lines radiating from the nucleus:
+
+| Force | Colour |
+|-------|--------|
+| Electromagnetic (default) | Gold |
+| Weak nuclear | Hot pink |
+| Strong nuclear | Red-orange |
+| Higgs field | Teal |
+| Gravity | Grey |
+
+- **Field intensity slider** (0 – 100 %) scales the number of field lines in real time
+- Force fields can be toggled independently via checkboxes
+
+### Quantum State Info (right panel)
+Live readout that updates whenever the quantum state changes:
+- Orbital name (e.g. `2p`)
+- Quantum numbers `(n, l, m)`
+- Electron binding energy (Rydberg formula: E_n = −13.6 eV / n²)
+- Bohr radius scale (a_n = n² × 0.529 Å)
+- Active force fields
 
 ---
 
-## 🏗️ Tech Stack
+## Physics
+
+Wave functions are based on the exact hydrogen solutions to the Schrödinger equation:
+
+```
+ψ(n,l,m) = R_nl(r) · Y_l^m(θ, φ)
+```
+
+- Radial wave function `R_nl` built from associated Laguerre polynomials
+- Electron positions sampled from |ψ|² via the exponential radial distribution
+- All physical constants use **CODATA 2022** recommended values (see `src/physics/constants/particles.ts`)
+
+**Key references:**
+- Griffiths, D. J. — *Introduction to Quantum Mechanics* (3rd ed.)
+- Griffiths, D. J. — *Introduction to Elementary Particles* (2nd ed.)
+- Peskin & Schroeder — *An Introduction to Quantum Field Theory*
+
+---
+
+## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| 3D Rendering | [Three.js](https://threejs.org/) |
-| Shader / VFX | GLSL custom shaders (volume rendering, probability clouds) |
-| UI Framework | Vanilla JS + CSS custom properties |
-| Charts | D3.js (radial probability plots) |
-| Math | math.js / custom hydrogen wave-function solver |
-| Build | Vite |
-| Deployment | GitHub Pages / Vercel |
+| 3D rendering | [Three.js](https://threejs.org/) |
+| 3D interaction | `OrbitControls` (Three.js examples) |
+| Language | TypeScript 5 |
+| UI | Vanilla TypeScript + CSS custom properties |
+| Build | [Vite](https://vitejs.dev/) 5 |
 
 ---
 
-## 🗂️ Project Structure
+## Project Structure
+
+```
 quantum-hydrogen-studio/
-├── index.html
+├── index.html                        # Static HTML shell (all DOM nodes pre-declared)
 ├── src/
-│ ├── main.js # App entry point
-│ ├── scene/
-│ │ ├── AtomScene.js # Three.js scene graph
-│ │ ├── Electron.js # Electron orbital rendering
-│ │ ├── Proton.js # Quark/gluon sub-structure
-│ │ └── ForceField.js # Force field visualisers
-│ ├── physics/
-│ │ ├── HydrogenWaveFunction.js # Analytical ψ(n,l,m) solver
-│ │ ├── ParticleProperties.js # Particle data registry
-│ │ └── TheoryModes.js # Extended theory configurations
-│ ├── ui/
-│ │ ├── PropertiesPanel.js # Particle info panel
-│ │ ├── OrbitalControls.js # n, l, m sliders
-│ │ └── TheorySelector.js # Theory Lab mode switcher
-│ ├── shaders/
-│ │ ├── orbital.vert / .frag # Probability cloud volume shaders
-│ │ └── gluon.vert / .frag # Flux tube rendering
-│ └── assets/
-│ ├── icons/
-│ └── textures/
+│   ├── main.ts                       # App entry — wires DOM to engine & controls
+│   ├── main.css                      # Dark space theme
+│   ├── core/engine/
+│   │   └── renderer.ts              # Three.js scene, OrbitControls, particle meshes
+│   ├── physics/
+│   │   ├── orbitals/hydrogen.ts     # ψ(n,l,m) solver, atom factory functions
+│   │   ├── fields/fundamental-forces.ts  # Coulomb / Yukawa / Higgs field maths
+│   │   └── constants/particles.ts   # CODATA 2022 constants, Standard Model data
+│   ├── ui/controls/
+│   │   └── quantum-state-control.ts # n / l / m sliders + force-field checkboxes
+│   └── types/particle.ts            # Shared TypeScript interfaces
 ├── public/
-│ └── favicon.svg
-├── tests/
-├── package.json
-├── vite.config.js
-└── README.md
-
+│   └── favicon.svg
+├── tsconfig.json
+├── vite.config.ts
+└── package.json
+```
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Node.js ≥ 18
 - npm ≥ 9
 
-### Install & Run
+### Install & run
 
 ```bash
 git clone https://github.com/shambhaveePandey/quantum-hydrogen-studio.git
@@ -142,56 +135,47 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173` in your browser.
+Open **`http://localhost:5173`** in your browser (Chrome, Edge, Firefox — any browser with WebGL support).
 
-### Build for Production
+> **Note:** Do not open the HTML file directly or use a Live Preview extension — TypeScript compilation requires the Vite dev server.
+
+### Production build
 
 ```bash
-npm run build
-npm run preview
+npm run build   # outputs to dist/
+npm run preview # serve the production build locally
 ```
 
 ---
 
-## 🔭 Physics Reference
+## Controls reference
 
-The wave functions are computed analytically from the exact hydrogen solution to the Schrödinger equation:
-
-ψ(n,l,m) = R_nl(r) · Y_l^m(θ, φ)
-
-
-Where `R_nl` are the associated Laguerre polynomial radial functions and `Y_l^m` are the real spherical harmonics. Quark colour charge is modelled using SU(3) colour algebra. All physical constants use CODATA 2022 recommended values.
-
-**Key references:**
-- Griffiths, D. J. — *Introduction to Quantum Mechanics* (3rd ed.)
-- Griffiths, D. J. — *Introduction to Elementary Particles* (2nd ed.)
-- Peskin & Schroeder — *An Introduction to Quantum Field Theory*
-- Kaluza (1921), Klein (1926) — original Kaluza–Klein papers
-- Polchinski — *String Theory* (Vol. 1 & 2)
-- Rovelli & Smolin (1995) — Loop Quantum Gravity (spin networks)
+| Input | Action |
+|-------|--------|
+| Left-drag | Orbit around the atom |
+| Right-drag / two-finger drag | Pan |
+| Scroll wheel / pinch | Zoom in / out |
+| n slider | Change principal quantum number |
+| l slider | Change angular momentum (auto-clamped to n−1) |
+| m slider | Change magnetic quantum number (auto-clamped to ±l) |
+| Force checkboxes | Toggle field line overlays |
+| Intensity slider | Scale field line density |
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
-Contributions are welcome! Areas where help is especially valuable:
+Contributions welcome. Areas of particular interest:
 
-- **New theory modes** — implement additional beyond-Standard-Model extensions
-- **Improved shaders** — more physically accurate orbital density rendering
-- **Mobile support** — optimised touch controls and 2D fallback views
-- **Accessibility** — screen-reader labels for particle properties panel
-- **Localisation** — translate UI text and theory descriptions
+- **Accurate orbital sampling** — replace the exponential approximation with a full rejection-sampling implementation of |ψ_nlm|²
+- **Quark sub-structure** — render the proton's uud quark content with colour-flux tubes
+- **Mobile / touch** — optimise controls and layout for small screens
+- **Accessibility** — ARIA labels for the info panel and controls
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) and open an issue before submitting large PRs.
+Please open an issue before submitting large PRs.
 
 ---
 
-## 📄 License
+## License
 
 MIT © [Shambhavee Pandey](https://github.com/shambhaveePandey)
-
----
-
-## ✨ Acknowledgements
-
-Inspired by the beauty of quantum mechanics and the conviction that physics should be explorable by anyone with a browser. Special thanks to the Three.js community and every physicist who has written accessible explanations of the Standard Model.

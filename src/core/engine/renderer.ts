@@ -1,15 +1,17 @@
 /**
  * 3D Visualization Engine using Three.js
- * Renders particle systems, orbitals, and force fields
+ * Renders particle systems, orbitals, and force fields with interactive 3D controls
  */
 
 import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { Particle, VisualizationSettings, ForceType, HydrogenAtomConfiguration } from '../../types/particle';
 
 export class VisualizationEngine {
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
   private renderer: THREE.WebGLRenderer;
+  private controls: OrbitControls;
   private particleMeshes: Map<string, THREE.Mesh> = new Map();
   private orbitMesh: THREE.Line | null = null;
   private fieldVisualization: THREE.Object3D | null = null;
@@ -29,36 +31,50 @@ export class VisualizationEngine {
     }
   ) {
     this.settings = settings;
-    
-    // Scene setup
+
+    // Scene setup — use a deep-blue that is visibly different from the dark panel background
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x0a0e27);
-    
-    // Camera setup
-    this.camera = new THREE.PerspectiveCamera(
-      75,
-      container.clientWidth / container.clientHeight,
-      0.1,
-      10000
-    );
-    this.camera.position.set(0, 0, 3);
-    
-    // Renderer setup
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    this.renderer.setSize(container.clientWidth, container.clientHeight);
-    this.renderer.setPixelRatio(window.devicePixelRatio);
+    this.scene.background = new THREE.Color(0x050d1a);
+
+    // Renderer setup (no alpha — opaque background so the canvas is always visible)
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.appendChild(this.renderer.domElement);
+
+    // Read dimensions after DOM insertion; fall back to window size if flex hasn't resolved yet
+    const width  = container.clientWidth  || window.innerWidth;
+    const height = container.clientHeight || window.innerHeight;
+
+    this.renderer.setSize(width, height);
+
+    // Camera setup
+    this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 10000);
+    this.camera.position.set(0, 0, 5);
     
     // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     this.scene.add(ambientLight);
-    
+
     const pointLight = new THREE.PointLight(0xffffff, 0.8);
     pointLight.position.set(5, 5, 5);
     this.scene.add(pointLight);
-    
-    // Handle window resize
+
+    // Axes helper: X = red, Y = green, Z = blue (length 2 Å units)
+    this.scene.add(new THREE.AxesHelper(2));
+
+    // OrbitControls — mouse/touch orbit, zoom, pan
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.06;
+    this.controls.minDistance = 1;
+    this.controls.maxDistance = 20;
+    this.controls.target.set(0, 0, 0);
+    this.controls.update();
+
+    // Handle window resize; also schedule one frame-deferred resize in case
+    // flex layout hasn't settled yet when the constructor ran
     window.addEventListener('resize', () => this.onWindowResize());
+    requestAnimationFrame(() => this.onWindowResize());
   }
   
   /**
@@ -92,11 +108,12 @@ export class VisualizationEngine {
    * Render proton at nucleus
    */
   private renderProton(proton: Particle): void {
-    const radius = 0.05 * this.settings.particle_scale;
+    const radius = 0.15 * this.settings.particle_scale;
     const geometry = new THREE.SphereGeometry(radius, 32, 32);
     const material = new THREE.MeshPhongMaterial({
-      color: 0xff0000, // Red for proton
-      emissive: 0xff6666,
+      color: 0xff2200,
+      emissive: 0xff4400,
+      emissiveIntensity: 0.4,
       shininess: 100,
     });
     
@@ -112,11 +129,12 @@ export class VisualizationEngine {
    * Render electron
    */
   private renderElectron(electron: Particle, index: number): void {
-    const radius = 0.03 * this.settings.particle_scale;
+    const radius = 0.08 * this.settings.particle_scale;
     const geometry = new THREE.SphereGeometry(radius, 32, 32);
     const material = new THREE.MeshPhongMaterial({
-      color: 0x00ff00, // Green for electron
-      emissive: 0x66ff66,
+      color: 0x00aaff,
+      emissive: 0x0044ff,
+      emissiveIntensity: 0.5,
       shininess: 100,
     });
     
@@ -152,10 +170,11 @@ export class VisualizationEngine {
     
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
     const material = new THREE.PointsMaterial({
-      color: 0x00ff00,
-      size: 0.02,
+      color: 0x00aaff,
+      size: 0.05,
       transparent: true,
-      opacity: 0.3,
+      opacity: 0.5,
+      sizeAttenuation: true,
     });
     
     const pointsMesh = new THREE.Points(geometry, material);
@@ -268,10 +287,7 @@ export class VisualizationEngine {
    */
   public animate(): void {
     this.animationId = requestAnimationFrame(() => this.animate());
-    
-    // Rotate camera view
-    this.camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), 0.001);
-    
+    this.controls.update(); // required for inertia/damping
     this.renderer.render(this.scene, this.camera);
   }
   

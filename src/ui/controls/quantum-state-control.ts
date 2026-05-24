@@ -36,111 +36,69 @@ export class ControlPanel {
   private render(): void {
     this.container.innerHTML = `
       <div class="control-panel">
-        <h2>Quantum State Controls</h2>
-        
+
         <div class="control-section">
           <h3>Orbital Selection</h3>
-          
+
           <label>
-            Principal Quantum Number (n):
-            <input 
-              type="range" 
-              id="orbital-n" 
-              min="1" 
-              max="5" 
-              value="${this.state.orbital_shell}"
-              class="slider"
-            >
+            Principal Quantum Number (n)
+            <input type="range" id="orbital-n"
+              min="1" max="5" value="${this.state.orbital_shell}">
             <span id="orbital-n-display">${this.state.orbital_shell}</span>
           </label>
-          
+
           <label>
-            Angular Momentum (l):
-            <input 
-              type="range" 
-              id="orbital-l" 
-              min="0" 
-              max="${Math.max(0, this.state.orbital_shell - 1)}" 
-              value="${this.state.orbital_angular_momentum}"
-              class="slider"
-            >
+            Angular Momentum (l)
+            <input type="range" id="orbital-l"
+              min="0" max="${Math.max(0, this.state.orbital_shell - 1)}"
+              value="${this.state.orbital_angular_momentum}">
             <span id="orbital-l-display">${this.state.orbital_angular_momentum}</span>
           </label>
-          
+
           <label>
-            Magnetic Number (m):
-            <input 
-              type="range" 
-              id="orbital-m" 
-              min="${-Math.max(0, this.state.orbital_angular_momentum)}" 
-              max="${Math.max(0, this.state.orbital_angular_momentum)}" 
-              value="${this.state.magnetic_quantum_number}"
-              class="slider"
-            >
+            Magnetic Number (m)
+            <input type="range" id="orbital-m"
+              min="${-Math.max(0, this.state.orbital_angular_momentum)}"
+              max="${Math.max(0, this.state.orbital_angular_momentum)}"
+              value="${this.state.magnetic_quantum_number}">
             <span id="orbital-m-display">${this.state.magnetic_quantum_number}</span>
           </label>
         </div>
-        
+
         <div class="control-section">
-          <h3>Force Field Visualization</h3>
-          
+          <h3>Force Field Visualisation</h3>
+
           <div class="force-field-toggles">
             <label>
-              <input 
-                type="checkbox" 
-                id="force-electromagnetic" 
-                ${this.state.force_fields.includes('electromagnetic') ? 'checked' : ''}
-              >
-              Electromagnetic Force
+              <input type="checkbox" id="force-electromagnetic"
+                ${this.state.force_fields.includes('electromagnetic') ? 'checked' : ''}>
+              Electromagnetic
             </label>
-            
             <label>
-              <input 
-                type="checkbox" 
-                id="force-weak" 
-                ${this.state.force_fields.includes('weak') ? 'checked' : ''}
-              >
-              Weak Nuclear Force
+              <input type="checkbox" id="force-weak"
+                ${this.state.force_fields.includes('weak') ? 'checked' : ''}>
+              Weak Nuclear
             </label>
-            
             <label>
-              <input 
-                type="checkbox" 
-                id="force-strong" 
-                ${this.state.force_fields.includes('strong') ? 'checked' : ''}
-              >
-              Strong Nuclear Force
+              <input type="checkbox" id="force-strong"
+                ${this.state.force_fields.includes('strong') ? 'checked' : ''}>
+              Strong Nuclear
             </label>
-            
             <label>
-              <input 
-                type="checkbox" 
-                id="force-higgs" 
-                ${this.state.force_fields.includes('higgs') ? 'checked' : ''}
-              >
+              <input type="checkbox" id="force-higgs"
+                ${this.state.force_fields.includes('higgs') ? 'checked' : ''}>
               Higgs Field
             </label>
           </div>
-          
+
           <label>
-            Field Intensity:
-            <input 
-              type="range" 
-              id="field-intensity" 
-              min="0" 
-              max="1" 
-              step="0.1"
-              value="${this.state.field_intensity}"
-              class="slider"
-            >
+            Field Intensity
+            <input type="range" id="field-intensity"
+              min="0" max="1" step="0.1" value="${this.state.field_intensity}">
             <span id="field-intensity-display">${(this.state.field_intensity * 100).toFixed(0)}%</span>
           </label>
         </div>
-        
-        <div class="control-section info-panel">
-          <h3>Quantum Information</h3>
-          <div id="quantum-info"></div>
-        </div>
+
       </div>
     `;
     

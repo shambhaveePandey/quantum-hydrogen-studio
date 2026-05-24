@@ -8,7 +8,54 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 </head>
 <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
+
+  <!-- ─── HEADER ──────────────────────────────────────────────────────────── -->
+  <!-- JS removes this badge once init() starts; if you still see it, the script did not run -->
+  <div id="js-status-badge" style="
+    position:fixed;top:4px;right:8px;z-index:9999;
+    background:#ff4444;color:#fff;font:bold 11px monospace;
+    padding:4px 10px;border-radius:4px;pointer-events:none;border:2px solid #fff;">
+    ⚠️ JS NOT LOADED
+  </div>
+
+  <noscript>
+    <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#ff4444;color:#fff;padding:40px;border-radius:12px;font:bold 16px monospace;text-align:center;z-index:99999;max-width:600px;border:3px solid #fff;box-shadow:0 0 40px rgba(0,0,0,.9);">
+      ⚠️ JavaScript is disabled or not running<br/><br/>This app requires JavaScript to render the 3D visualization.
+    </div>
+  </noscript>
+
+  <header class="app-header">
+    <h1>⚛️ Quantum Hydrogen Studio</h1>
+    <p>Interactive visualization of hydrogen atom elementary particles and quantum force fields</p>
+  </header>
+
+  <!-- ─── THREE-COLUMN LAYOUT ─────────────────────────────────────────────── -->
+  <main class="app-main">
+
+    <!-- LEFT PANEL · quantum-number sliders + force-field toggles -->
+    <aside class="panel panel-left" id="controls-panel">
+      <h2 class="panel-title">Quantum State Controls</h2>
+      <div class="panel-body" id="quantum-controls"></div>
+    </aside>
+
+    <!-- CENTER PANEL · Three.js WebGL canvas (fills all available space) -->
+    <section class="panel panel-center" id="visualization-panel">
+      <h2 class="panel-title">3D Particle Visualization</h2>
+      <div class="renderer-container" id="renderer-container">
+        <div class="renderer-loading" id="renderer-loading">Initialising 3D engine…</div>
+      </div>
+    </section>
+
+    <!-- RIGHT PANEL · live orbital & particle info readout -->
+    <aside class="panel panel-right" id="info-panel">
+      <h2 class="panel-title">Quantum State Info</h2>
+      <div class="panel-body" id="quantum-info">
+        <p class="info-placeholder">Loading quantum information…</p>
+      </div>
+    </aside>
+
+  </main>
+
+  <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

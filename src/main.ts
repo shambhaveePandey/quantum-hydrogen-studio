@@ -1,139 +1,99 @@
-/**
- * Quantum Hydrogen Studio - Main Application Entry Point
- * 
- * This interactive web application visualizes elementary particles in hydrogen atoms
- * with quantum orbital mechanics and force field visualizations.
- * 
- * References:
- * - Schrödinger Equation solutions for Hydrogen
- * - Standard Model of Particle Physics
- * - Quantum Electrodynamics (QED)
- * - Electroweak Theory
- * - Quantum Chromodynamics (QCD)
- */
+import './main.css';
+import { VisualizationEngine } from './core/engine/renderer';
+import { ControlPanel } from './ui/controls/quantum-state-control';
+import { createHydrogenAtom, createExcitedHydrogenAtom } from './physics/orbitals/hydrogen';
 
-import "./main.css";
+// Catch any uncaught promise rejections or JS errors and show them on screen
+window.addEventListener('error', (e) => showFatalError(String(e.error ?? e.message)));
+window.addEventListener('unhandledrejection', (e) => showFatalError(String(e.reason)));
 
-// Create the application shell
-function initializeApplication(): void {
-  const appElement = document.getElementById('app');
-  
-  if (!appElement) {
-    console.error('App root element (#app) not found.');
+function showFatalError(msg: string): void {
+  const container = document.getElementById('renderer-container');
+  if (container) {
+    container.innerHTML = `
+      <div class="error-state">
+        <h3>Initialisation Error</h3>
+        <pre>${msg}</pre>
+      </div>`;
+  }
+  console.error('[Quantum Hydrogen Studio]', msg);
+}
+
+async function init(): Promise<void> {
+  // Remove the "JS not running" diagnostic badge immediately
+  document.getElementById('js-status-badge')?.remove();
+
+  // --- grab DOM nodes that exist in index.html ---------------------------------
+  const rendererContainer = document.getElementById('renderer-container');
+  const renderingLoading  = document.getElementById('renderer-loading');
+  const infoContainer     = document.getElementById('quantum-info');
+
+  if (!rendererContainer) {
+    throw new Error('Missing #renderer-container in DOM — check index.html');
+  }
+
+  // --- 3-D engine --------------------------------------------------------------
+  let engine: VisualizationEngine;
+  try {
+    engine = new VisualizationEngine(rendererContainer, {
+      show_electron_cloud:      true,
+      show_probability_density: true,
+      show_quark_structure:     false,
+      show_field_lines:         true,
+      show_particle_paths:      false,
+      particle_scale:           1,
+      field_intensity:          0.5,
+    });
+  } catch (err) {
+    showFatalError(`WebGL / Three.js init failed:\n${String(err)}`);
     return;
   }
 
-  // Create the application shell HTML
-  appElement.innerHTML = `
-    <div class="app-shell">
-      <header class="app-header">
-        <h1>⚛️ Quantum Hydrogen Studio</h1>
-        <p>Interactive visualization of hydrogen atom elementary particles and quantum force fields</p>
-      </header>
+  // Hide the "Initialising…" overlay now that the canvas is mounted
+  if (renderingLoading) renderingLoading.style.display = 'none';
 
-      <section class="app-content">
-        <!-- LEFT PANEL: CONTROLS -->
-        <aside class="panel panel-left" id="controls-panel">
-          <h2>Quantum State Controls</h2>
-          <div id="quantum-controls"></div>
-        </aside>
-
-        <!-- CENTER PANEL: 3D VISUALIZATION -->
-        <section class="panel panel-center" id="visualization-panel">
-          <h2>3D Particle Visualization</h2>
-          <div class="visualization-placeholder" id="renderer-container">
-            Initializing 3D engine...
-          </div>
-        </section>
-
-        <!-- RIGHT PANEL: INFORMATION -->
-        <aside class="panel panel-right" id="info-panel">
-          <h2>Quantum State Info</h2>
-          <div id="quantum-info">
-            <p>Loading quantum information...</p>
-          </div>
-        </aside>
-      </section>
-    </div>
-  `;
-
-  // Dynamically import and initialize components after DOM is ready
-  initializeComponents();
-}
-
-async function initializeComponents(): Promise<void> {
+  // --- scene -------------------------------------------------------------------
   try {
-    // Import components
-    const { VisualizationEngine } = await import('./core/engine/renderer');
-    const { ControlPanel } = await import('./ui/controls/quantum-state-control');
-    const { createHydrogenAtom } = await import('./physics/orbitals/hydrogen');
-    const { getForceFieldVisualization } = await import('./physics/fields/fundamental-forces');
+    engine.renderHydrogenAtom(createHydrogenAtom());
+    engine.renderForceField('electromagnetic', 0.5);
+    engine.animate();
+  } catch (err) {
+    showFatalError(`Scene render failed:\n${String(err)}`);
+    return;
+  }
 
-    // Initialize the 3D visualization engine
-    const rendererContainer = document.getElementById('renderer-container');
-    if (rendererContainer) {
-      rendererContainer.innerHTML = '';
-      
-      const visualizationEngine = new VisualizationEngine(rendererContainer, {
-        show_electron_cloud: true,
-        show_probability_density: true,
-        show_quark_structure: false,
-        show_field_lines: true,
-        show_particle_paths: false,
-        particle_scale: 1,
-        field_intensity: 0.5,
-      });
+  // --- control panel -----------------------------------------------------------
+  try {
+    const controlPanel = new ControlPanel('quantum-controls');
 
-      // Render initial hydrogen atom
-      const hydrogenAtom = createHydrogenAtom();
-      visualizationEngine.renderHydrogenAtom(hydrogenAtom);
-      visualizationEngine.renderForceField('electromagnetic', 0.5);
-      visualizationEngine.animate();
+    controlPanel.onStateChange((state) => {
+      const { orbital_shell: n, orbital_angular_momentum: l,
+              magnetic_quantum_number: m, force_fields, field_intensity } = state;
 
-      // Initialize control panel
-      const controlsPanel = document.getElementById('quantum-controls');
-      if (controlsPanel) {
-        const controlPanel = new ControlPanel('quantum-controls');
+      const atom = (n === 1 && l === 0)
+        ? createHydrogenAtom()
+        : createExcitedHydrogenAtom(n, l, m);
 
-        // Listen for state changes from control panel
-        controlPanel.onStateChange((state: any) => {
-          // Update hydrogen atom based on selected orbital
-          const { orbital_shell, orbital_angular_momentum, magnetic_quantum_number, force_fields, field_intensity } = state;
-          
-          const { createExcitedHydrogenAtom } = await import('./physics/orbitals/hydrogen');
-          const newHydrogenAtom = orbital_shell === 1 && orbital_angular_momentum === 0
-            ? createHydrogenAtom()
-            : createExcitedHydrogenAtom(orbital_shell, orbital_angular_momentum, magnetic_quantum_number);
-
-          visualizationEngine.renderHydrogenAtom(newHydrogenAtom);
-
-          // Update force field visualizations
-          if (force_fields.length > 0) {
-            visualizationEngine.renderForceField(force_fields[0], field_intensity);
-          }
-
-          visualizationEngine.updateSettings({ field_intensity });
-        });
+      engine.renderHydrogenAtom(atom);
+      if (force_fields.length > 0) {
+        engine.renderForceField(force_fields[0], field_intensity);
       }
-    }
-  } catch (error) {
-    console.error('Failed to initialize application:', error);
-    const app = document.getElementById('app');
-    if (app) {
-      app.innerHTML = `
-        <div style="color: red; font-family: monospace; padding: 20px;">
-          <h1>Initialization Error</h1>
-          <pre>${String(error)}</pre>
-        </div>
-      `;
+      engine.updateSettings({ field_intensity });
+    });
+  } catch (err) {
+    // Controls failing is non-fatal — log but keep the canvas running
+    console.error('Control panel init failed:', err);
+    if (infoContainer) {
+      infoContainer.innerHTML =
+        `<p class="info-placeholder" style="color:var(--color-error)">
+           Controls unavailable: ${String(err)}
+         </p>`;
     }
   }
 }
 
-// Initialize application when DOM is ready
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeApplication);
+  document.addEventListener('DOMContentLoaded', init);
 } else {
-  initializeApplication();
+  init();
 }
-
