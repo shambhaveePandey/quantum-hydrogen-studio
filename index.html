@@ -5,13 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Interactive web application for exploring hydrogen atom quantum orbitals and quantum field theory" />
     <title>Quantum Hydrogen Studio</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/quantum-hydrogen-studio/favicon.svg" />
   <script type="module" crossorigin src="/quantum-hydrogen-studio/assets/index-7DOXKiAt.js"></script>
   <link rel="stylesheet" crossorigin href="/quantum-hydrogen-studio/assets/index-TKPq6H6m.css">
 </head>
 <body>
 
-  <!-- ─── HEADER ──────────────────────────────────────────────────────────── -->
   <!-- JS removes this badge once init() starts; if you still see it, the script did not run -->
   <div id="js-status-badge" style="
     position:fixed;top:4px;right:8px;z-index:9999;
@@ -31,16 +30,13 @@
     <p>Interactive visualization of hydrogen atom elementary particles and quantum force fields</p>
   </header>
 
-  <!-- ─── THREE-COLUMN LAYOUT ─────────────────────────────────────────────── -->
   <main class="app-main">
 
-    <!-- LEFT PANEL · quantum-number sliders + force-field toggles -->
     <aside class="panel panel-left" id="controls-panel">
       <h2 class="panel-title">Quantum State Controls</h2>
       <div class="panel-body" id="quantum-controls"></div>
     </aside>
 
-    <!-- CENTER PANEL · Three.js WebGL canvas (fills all available space) -->
     <section class="panel panel-center" id="visualization-panel">
       <h2 class="panel-title">3D Particle Visualization</h2>
       <div class="renderer-container" id="renderer-container">
@@ -48,7 +44,6 @@
       </div>
     </section>
 
-    <!-- RIGHT PANEL · live orbital & particle info readout -->
     <aside class="panel panel-right" id="info-panel">
       <h2 class="panel-title">Quantum State Info</h2>
       <div class="panel-body" id="quantum-info">
