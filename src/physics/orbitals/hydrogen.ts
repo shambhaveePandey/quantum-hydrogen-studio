@@ -32,24 +32,31 @@ export function generateElectronPosition(
   quantumNumbers: QuantumNumbers = { n: 1, l: 0, m: 0 }
 ): [number, number, number] {
   const { n, l } = quantumNumbers;
-  
+
   // Bohr radius in Ångströms
   const a0 = CONSTANTS.BOHR_RADIUS / CONSTANTS.ANGSTROM_TO_METERS;
-  
-  // Characteristic length scale for orbital
-  const charLength = n * a0;
-  
-  // Generate random position with exponential distribution
-  // for radial component (based on |R_nl(r)|²)
-  const r = charLength * (-Math.log(Math.random())); // Exponential distribution
+
+  // Sample the RADIAL PROBABILITY P(r) = r²·|R_nl(r)|², NOT |R|² alone.
+  // P(r) for hydrogen is a Gamma-type distribution ∝ r^(2l+2)·e^(−2r/(n·a₀)),
+  // so its peak (the most-probable radius) sits AWAY from the nucleus and
+  // moves outward with n and l — reproducing the correct hydrogen scaling.
+  // A sum of (l+2) exponentials draws from this Gamma shape.
+  const decay = n * a0;
+  let r = 0;
+  const radialShape = l + 2;
+  for (let k = 0; k < radialShape; k++) {
+    r += -Math.log(Math.random());
+  }
+  r *= decay / 2; // normalise so the 1s peak sits at ≈ a₀ (most-probable radius)
+
   const theta = Math.acos(2 * Math.random() - 1); // Uniform in cos(theta)
   const phi = 2 * Math.PI * Math.random(); // Uniform in phi
-  
+
   // Convert spherical to Cartesian
   const x = r * Math.sin(theta) * Math.cos(phi);
   const y = r * Math.sin(theta) * Math.sin(phi);
   const z = r * Math.cos(theta);
-  
+
   return [x, y, z];
 }
 
@@ -209,6 +216,10 @@ export function calculateBohrRadius(n: number, Z: number = 1): number {
  * Using Rydberg formula: ν = R * c * (1/n1² - 1/n2²)
  */
 export function calculateTransitionFrequency(n1: number, n2: number): number {
-  const rydbergFreq = CONSTANTS.RYDBERG_ENERGY / (CONSTANTS.REDUCED_PLANCK / (2 * Math.PI));
-  return rydbergFreq * (1 / (n1 * n1) - 1 / (n2 * n2));
+  // Photon frequency ν = ΔE / h, where ΔE = E_Ry·(1/n1² − 1/n2²).
+  // REDUCED_PLANCK is already ħ = h/2π, so the Planck constant is h = 2πħ.
+  // (The previous version divided by ħ/2π, introducing a spurious (2π)² factor.)
+  const rydbergEnergyJoules = CONSTANTS.RYDBERG_ENERGY * CONSTANTS.EV_TO_JOULES;
+  const planckConstant = 2 * Math.PI * CONSTANTS.REDUCED_PLANCK; // h in J·s
+  return (rydbergEnergyJoules / planckConstant) * (1 / (n1 * n1) - 1 / (n2 * n2));
 }

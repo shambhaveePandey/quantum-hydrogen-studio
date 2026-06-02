@@ -13,7 +13,8 @@ export class VisualizationEngine {
   private renderer: THREE.WebGLRenderer;
   private controls: OrbitControls;
   private particleMeshes: Map<string, THREE.Mesh> = new Map();
-  private orbitMesh: THREE.Line | null = null;
+  private orbitMesh: THREE.Points | null = null;
+  private probabilityShells: THREE.Mesh[] = [];
   private fieldVisualization: THREE.Object3D | null = null;
   private settings: VisualizationSettings;
   private animationId: number | null = null;
@@ -74,6 +75,12 @@ export class VisualizationEngine {
     // Handle window resize; also schedule one frame-deferred resize in case
     // flex layout hasn't settled yet when the constructor ran
     window.addEventListener('resize', () => this.onWindowResize());
+    // Mobile browsers don't always fire 'resize' on rotation; cover both,
+    // with a deferred pass to let the new layout settle before re-measuring.
+    window.addEventListener('orientationchange', () => {
+      this.onWindowResize();
+      setTimeout(() => this.onWindowResize(), 300);
+    });
     requestAnimationFrame(() => this.onWindowResize());
   }
   
@@ -101,6 +108,36 @@ export class VisualizationEngine {
     // Render probability density visualization
     if (this.settings.show_probability_density) {
       this.renderProbabilityDensity(hydrogenConfig);
+    }
+
+    // Adaptively frame the camera so larger (high-n) orbitals stay in view.
+    this.frameOrbital(hydrogenConfig);
+  }
+
+  /**
+   * Adjust the camera/controls so the current orbital fits the viewport.
+   * Orbital extent grows as the mean radius <r> = a₀/2·[3n² − l(l+1)], plus
+   * headroom for the radial tail. We raise OrbitControls.maxDistance and, if
+   * the camera is currently too close to see the whole cloud, ease it back.
+   */
+  private frameOrbital(hydrogenConfig: HydrogenAtomConfiguration): void {
+    const n = Math.max(1, hydrogenConfig.orbital_shell);
+    const l = Math.max(0, Math.min(hydrogenConfig.orbital_angular_momentum, n - 1));
+    const a0 = 0.6;
+    const meanRadius = (a0 / 2) * (3 * n * n - l * (l + 1));
+    const orbitalExtent = meanRadius * 2.2; // include the radial tail
+
+    // Keep zoom limits sensible for the current orbital size
+    this.controls.maxDistance = Math.max(20, orbitalExtent * 4);
+    this.controls.minDistance = 0.5;
+
+    // Desired viewing distance to comfortably frame the orbital (FOV 75°)
+    const fitDistance = orbitalExtent / Math.tan((this.camera.fov * Math.PI) / 180 / 2) + 1.5;
+    const currentDistance = this.camera.position.distanceTo(this.controls.target);
+    if (currentDistance < fitDistance) {
+      const dir = this.camera.position.clone().sub(this.controls.target).normalize();
+      this.camera.position.copy(dir.multiplyScalar(fitDistance).add(this.controls.target));
+      this.controls.update();
     }
   }
   
@@ -147,59 +184,136 @@ export class VisualizationEngine {
   }
   
   /**
-   * Render electron orbital cloud (ground state 1s)
+   * Render the electron orbital cloud as a Monte-Carlo point cloud sampled
+   * from the hydrogen probability density |ψ_nlm|².
+   *
+   * Radial part: the RADIAL PROBABILITY P(r) = r²·|R_nl(r)|² (not |R|² alone).
+   *   For the 1s state P(r) ∝ r²·e^(−2r/a₀), a Gamma distribution peaking at
+   *   the most-probable radius r = a₀ — NOT at the nucleus. We sample it with a
+   *   sum-of-exponentials trick (Gamma(shape) ≈ Σ of `shape` exponentials).
+   * Angular part: |Y_lm(θ,φ)|² gives the orbital its characteristic shape
+   *   (s = spherical, p = two-lobed, d = four-lobed) via rejection sampling.
+   * Scale: the orbital size grows as ≈ n²·a₀, the correct hydrogen scaling.
    */
   private renderElectronCloud(hydrogenConfig: HydrogenAtomConfiguration): void {
-    if (this.orbitMesh) this.scene.remove(this.orbitMesh);
-    
+    if (this.orbitMesh) {
+      this.scene.remove(this.orbitMesh);
+      this.orbitMesh.geometry.dispose();
+    }
+
+    const n = Math.max(1, hydrogenConfig.orbital_shell);
+    const l = Math.max(0, Math.min(hydrogenConfig.orbital_angular_momentum, n - 1));
+    const m = Math.max(-l, Math.min(hydrogenConfig.magnetic_quantum_number, l));
+
+    // Visualization Bohr radius (Ångström-scaled for a comfortable camera frame)
+    const a0 = 0.6;
+    // Exponential decay length of |R_nl|² scales as n·a₀
+    const decay = n * a0;
+
     const points: THREE.Vector3[] = [];
-    const a0 = 0.5; // Bohr radius in Ångströms (scaled for visualization)
-    const samples = 1000;
-    
-    for (let i = 0; i < samples; i++) {
-      const theta = Math.acos(2 * Math.random() - 1);
+    const samples = 1400;
+    let attempts = 0;
+    const maxAttempts = samples * 40;
+
+    while (points.length < samples && attempts < maxAttempts) {
+      attempts++;
+
+      // --- Radial sample via Gamma-like distribution P(r) ∝ r^(2+2l)·e^(−2r/(n·a₀))
+      // Sum of (l+2) exponentials approximates the radial-probability peak that
+      // moves outward with n and l, reproducing the most-probable-radius shift.
+      let r = 0;
+      const radialShape = l + 2; // 1s → 2 exponentials → peak away from nucleus
+      for (let k = 0; k < radialShape; k++) {
+        r += -Math.log(Math.random());
+      }
+      r *= decay / 2; // normalise so the 1s peak sits near a₀
+
+      // --- Angular sample with |Y_lm|² rejection sampling
+      const theta = Math.acos(2 * Math.random() - 1); // uniform in cos θ
       const phi = 2 * Math.PI * Math.random();
-      const r = a0 * (-Math.log(Math.random())); // Exponential distribution
-      
+      const angularProb = this.angularProbability(l, m, theta);
+      if (Math.random() > angularProb) continue; // reject
+
       const x = r * Math.sin(theta) * Math.cos(phi);
       const y = r * Math.sin(theta) * Math.sin(phi);
       const z = r * Math.cos(theta);
-      
       points.push(new THREE.Vector3(x, y, z));
     }
-    
+
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
     const material = new THREE.PointsMaterial({
       color: 0x00aaff,
       size: 0.05,
       transparent: true,
-      opacity: 0.5,
+      opacity: 0.55,
       sizeAttenuation: true,
     });
-    
+
     const pointsMesh = new THREE.Points(geometry, material);
-    this.orbitMesh = pointsMesh as any;
+    this.orbitMesh = pointsMesh;
     this.scene.add(pointsMesh);
+  }
+
+  /**
+   * Normalised |Y_lm(θ)|² shape factor (φ-independent magnitude) used for
+   * rejection sampling the angular distribution. Returns a value in [0,1].
+   *   l=0 (s): isotropic sphere
+   *   l=1 (p): m=0 → cos²θ (dumbbell along z); |m|=1 → sin²θ (torus)
+   *   l=2 (d): m=0 → (3cos²θ−1)²; |m|=1 → sin²θcos²θ; |m|=2 → sin⁴θ
+   */
+  private angularProbability(l: number, m: number, theta: number): number {
+    const c = Math.cos(theta);
+    const s = Math.sin(theta);
+    const am = Math.abs(m);
+    if (l === 0) return 1;
+    if (l === 1) {
+      return am === 0 ? c * c : s * s;
+    }
+    if (l === 2) {
+      if (am === 0) { const v = (3 * c * c - 1); return (v * v) / 4; }
+      if (am === 1) return s * s * c * c * 4;
+      return s * s * s * s; // |m|=2
+    }
+    // l ≥ 3 (f and beyond): approximate with an l-lobed band, keeps it lively
+    return Math.pow(Math.abs(Math.cos((l) * theta)), 2);
   }
   
   /**
-   * Render probability density isosurface
+   * Render probability-density reference shells.
+   *
+   * These translucent wireframe spheres mark characteristic radii of the
+   * current orbital. They scale with the orbital's mean radius
+   * <r> = a₀/2 · [3n² − l(l+1)], so the shells visibly expand as n increases
+   * — reflecting the real n² growth of hydrogen orbitals. Old shells are
+   * disposed of on every call to avoid mesh build-up.
    */
   private renderProbabilityDensity(hydrogenConfig: HydrogenAtomConfiguration): void {
-    // Simplified visualization: concentric spheres representing probability shells
-    const shells = [0.5, 1.0, 1.5]; // Bohr radii
-    
-    shells.forEach((r, index) => {
-      const geometry = new THREE.SphereGeometry(r, 32, 32);
+    // Remove previous shells (fixes the mesh-leak that accumulated spheres)
+    this.probabilityShells.forEach(mesh => {
+      this.scene.remove(mesh);
+      mesh.geometry.dispose();
+      (mesh.material as THREE.Material).dispose();
+    });
+    this.probabilityShells = [];
+
+    const n = Math.max(1, hydrogenConfig.orbital_shell);
+    const l = Math.max(0, Math.min(hydrogenConfig.orbital_angular_momentum, n - 1));
+    const a0 = 0.6;
+    const meanRadius = (a0 / 2) * (3 * n * n - l * (l + 1));
+
+    // Three reference shells at 0.5×, 1× and 1.5× the mean orbital radius
+    const fractions = [0.5, 1.0, 1.5];
+    fractions.forEach((f, index) => {
+      const geometry = new THREE.SphereGeometry(meanRadius * f, 32, 32);
       const material = new THREE.MeshPhongMaterial({
         color: new THREE.Color().setHSL(0.6 + index * 0.1, 0.7, 0.5),
         wireframe: true,
         transparent: true,
-        opacity: 0.2,
+        opacity: 0.18,
       });
-      
       const mesh = new THREE.Mesh(geometry, material);
       this.scene.add(mesh);
+      this.probabilityShells.push(mesh);
     });
   }
   

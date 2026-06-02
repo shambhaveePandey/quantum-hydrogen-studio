@@ -402,19 +402,96 @@ label input[type="range"]::-moz-range-track {
 
 
 /* ─────────────────────────────────────────────
-   Responsive
+   Touch / canvas behaviour
    ───────────────────────────────────────────── */
-/* RESPONSIVE LAYOUTS — applies only on smaller screens */
-@media (max-width: 768px) {
-  .app-main { flex-direction: column; }
-  .panel-left, .panel-right {
-    flex: 0 0 auto;
-    max-height: 38vh;
-    width: 100%;
+/* Let OrbitControls own touch gestures inside the 3D viewport so the page
+   doesn't scroll/zoom while the user rotates the atom. */
+.renderer-container,
+.renderer-container canvas {
+  touch-action: none;
+}
+
+
+/* ─────────────────────────────────────────────
+   Responsive — tablets (≤ 900px)
+   ───────────────────────────────────────────── */
+@media (max-width: 900px) {
+  /* On small screens the app scrolls as a single column instead of being a
+     locked full-viewport grid. The 3D view stays on top and always visible. */
+  body {
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
   }
+
+  .app-header {
+    height: auto;
+    padding: var(--sp-md) var(--sp-lg);
+  }
+  .app-header h1 { font-size: var(--fs-xl); }
+  .app-header p  { font-size: var(--fs-xs); }
+
+  .app-main {
+    flex-direction: column;
+    overflow: visible;
+    gap: var(--sp-md);
+    padding: var(--sp-md);
+  }
+
+  /* 3-D view first, with a guaranteed usable height */
   .panel-center {
-    flex: 1;
-    min-width: 0;
+    order: -1;
+    flex: 0 0 auto;
     width: 100%;
+    min-width: 0;
+    height: 55vh;
+    min-height: 320px;
+  }
+
+  /* Controls + info stack below, sized to their content (page scrolls) */
+  .panel-left,
+  .panel-right {
+    flex: 0 0 auto;
+    width: 100%;
+    max-height: none;
+  }
+  .panel-body { overflow-y: visible; }
+}
+
+
+/* ─────────────────────────────────────────────
+   Responsive — phones (≤ 560px)
+   ───────────────────────────────────────────── */
+@media (max-width: 560px) {
+  .panel-center {
+    height: 48vh;
+    min-height: 280px;
+  }
+
+  .app-header h1 { font-size: var(--fs-lg); }
+
+  /* Roomier tap targets for sliders and checkboxes on touch screens */
+  label input[type="range"] { height: 10px; }
+  label input[type="range"]::-webkit-slider-thumb { width: 22px; height: 22px; }
+  label input[type="range"]::-moz-range-thumb     { width: 22px; height: 22px; }
+
+  .force-field-toggles label { padding: var(--sp-md); }
+  .force-field-toggles label input[type="checkbox"] { width: 20px; height: 20px; }
+
+  .control-panel,
+  #quantum-info { padding: var(--sp-md); }
+
+  /* Larger base font so values are legible on small displays */
+  .info-item { font-size: var(--fs-sm); }
+}
+
+
+/* ─────────────────────────────────────────────
+   Landscape phones — keep the 3-D view dominant
+   ───────────────────────────────────────────── */
+@media (max-width: 900px) and (orientation: landscape) {
+  .panel-center {
+    height: 70vh;
+    min-height: 260px;
   }
 }
