@@ -5,6 +5,7 @@
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
 import { Particle, VisualizationSettings, ForceType, HydrogenAtomConfiguration } from '../../types/particle';
 
 export class VisualizationEngine {
@@ -18,6 +19,13 @@ export class VisualizationEngine {
   private fieldVisualization: THREE.Object3D | null = null;
   private settings: VisualizationSettings;
   private animationId: number | null = null;
+
+  // Navigation gizmo (ViewCube) + its frame clock
+  private viewHelper: ViewHelper;
+  private clock: THREE.Clock = new THREE.Clock();
+
+  // Background multi-axis spatial reference graph (Planck-scale grid)
+  private spatialGraph: THREE.Group | null = null;
   
   constructor(
     container: HTMLElement,
@@ -40,6 +48,9 @@ export class VisualizationEngine {
     // Renderer setup (no alpha — opaque background so the canvas is always visible)
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // We render the main scene and the ViewCube gizmo in two passes, so disable
+    // automatic buffer clearing and clear once manually at the top of the frame.
+    this.renderer.autoClear = false;
     container.appendChild(this.renderer.domElement);
 
     // Read dimensions after DOM insertion; fall back to window size if flex hasn't resolved yet
@@ -63,6 +74,10 @@ export class VisualizationEngine {
     // Axes helper: X = red, Y = green, Z = blue (length 2 Å units)
     this.scene.add(new THREE.AxesHelper(2));
 
+    // Background multi-axis spatial reference graph (Planck-length scaling)
+    this.spatialGraph = this.createSpatialGraph();
+    this.scene.add(this.spatialGraph);
+
     // OrbitControls — mouse/touch orbit, zoom, pan
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
@@ -71,6 +86,17 @@ export class VisualizationEngine {
     this.controls.maxDistance = 20;
     this.controls.target.set(0, 0, 0);
     this.controls.update();
+
+    // Navigation ViewCube gizmo (bottom-right overlay). It re-orients the
+    // camera to ±X/±Y/±Z when its faces are clicked, animating the transition.
+    this.viewHelper = new ViewHelper(this.camera, this.renderer.domElement);
+    this.viewHelper.setLabels('X', 'Y', 'Z');
+    // Route clicks in the gizmo's bottom-right region to the helper.
+    this.renderer.domElement.addEventListener('pointerdown', (event) => {
+      if (this.isPointerOnGizmo(event)) {
+        this.viewHelper.handleClick(event);
+      }
+    });
 
     // Handle window resize; also schedule one frame-deferred resize in case
     // flex layout hasn't settled yet when the constructor ran
@@ -401,8 +427,19 @@ export class VisualizationEngine {
    */
   public animate(): void {
     this.animationId = requestAnimationFrame(() => this.animate());
-    this.controls.update(); // required for inertia/damping
+
+    const delta = this.clock.getDelta();
+    // Advance the ViewCube's re-orientation animation when a face was clicked.
+    if (this.viewHelper.animating) {
+      this.viewHelper.update(delta);
+    } else {
+      this.controls.update(); // required for inertia/damping
+    }
+
+    // Main scene first, then overlay the gizmo without clearing the frame.
+    this.renderer.clear();
     this.renderer.render(this.scene, this.camera);
+    this.viewHelper.render(this.renderer);
   }
   
   /**
@@ -427,10 +464,121 @@ export class VisualizationEngine {
   }
   
   /**
+   * Hit-test whether a pointer event landed inside the ViewCube gizmo, which
+   * occupies a fixed 128x128 px square in the bottom-right of the canvas.
+   */
+  private isPointerOnGizmo(event: PointerEvent): boolean {
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    const size = 128;
+    return x >= rect.width - size && y >= rect.height - size;
+  }
+
+  /**
+   * Build a background multi-axis spatial reference graph that conveys the
+   * staggering range of physical length scales involved.
+   *
+   * Scene units: 1 unit = the visualisation Bohr radius a0_vis = 0.6 (which
+   * stands in for the real Bohr radius a0 = 5.29e-11 m). The grid therefore
+   * shows how the Bohr radius compares with the Planck length
+   * Lp = 1.616e-35 m: the ratio a0 / Lp ~ 3.27e24, i.e. the atom is ~24.5
+   * orders of magnitude larger than the Planck length. Because that span
+   * cannot be drawn linearly, the back-plane uses a LOGARITHMIC (base-10)
+   * radial grid: each concentric ring is one decade (x10) smaller in real
+   * size as you move inward, with the innermost ring annotated near the
+   * Planck scale. The three coloured axes (X/Y/Z) provide spatial reference
+   * for orbiting the camera.
+   */
+  private createSpatialGraph(): THREE.Group {
+    const group = new THREE.Group();
+
+    // --- A faint Cartesian grid plane behind the atom (XZ plane) ----------
+    const grid = new THREE.GridHelper(16, 16, 0x224466, 0x16263b);
+    (grid.material as THREE.Material).transparent = true;
+    (grid.material as THREE.Material).opacity = 0.25;
+    group.add(grid);
+
+    // A second grid rotated to the XY plane gives the multi-axis feel.
+    const gridXY = new THREE.GridHelper(16, 16, 0x224466, 0x16263b);
+    gridXY.rotation.x = Math.PI / 2;
+    (gridXY.material as THREE.Material).transparent = true;
+    (gridXY.material as THREE.Material).opacity = 0.12;
+    group.add(gridXY);
+
+    // --- Logarithmic decade rings: each ring = x10 in real length scale ---
+    // Map: outermost ring (radius 7) = Bohr radius scale (~1e-10 m); each
+    // step inward divides the real size by 10 until we approach Lp (~1e-35 m).
+    const a0Meters = 5.29177e-11;      // Bohr radius (m)
+    const planckMeters = 1.616255e-35; // Planck length (m)
+    const decades = Math.round(Math.log10(a0Meters / planckMeters)); // ~24-25
+    const maxRingRadius = 7;
+    const ringsToDraw = 6; // draw the outer 6 decades; label endpoints
+    for (let i = 0; i < ringsToDraw; i++) {
+      const radius = maxRingRadius * Math.pow(0.62, i); // shrink ~per decade
+      const segments = 96;
+      const pts: THREE.Vector3[] = [];
+      for (let s = 0; s <= segments; s++) {
+        const a = (s / segments) * Math.PI * 2;
+        pts.push(new THREE.Vector3(Math.cos(a) * radius, 0, Math.sin(a) * radius));
+      }
+      const geo = new THREE.BufferGeometry().setFromPoints(pts);
+      const mat = new THREE.LineBasicMaterial({
+        color: new THREE.Color().setHSL(0.55, 0.6, 0.45 - i * 0.03),
+        transparent: true,
+        opacity: 0.35,
+      });
+      group.add(new THREE.LineLoop(geo, mat));
+    }
+
+    // --- Decade labels via sprite canvases (outer = atomic, inner = Planck)
+    const labelData: Array<{ r: number; text: string }> = [
+      { r: maxRingRadius, text: 'Bohr radius a0 = 5.3e-11 m' },
+      { r: maxRingRadius * Math.pow(0.62, ringsToDraw - 1), text: `${decades} decades to Planck Lp = 1.6e-35 m` },
+    ];
+    labelData.forEach(({ r, text }) => {
+      const sprite = this.makeTextSprite(text);
+      sprite.position.set(0, 0.05, -r);
+      group.add(sprite);
+    });
+
+    return group;
+  }
+
+  /**
+   * Create a small text label as a camera-facing sprite (for the spatial graph).
+   */
+  private makeTextSprite(text: string): THREE.Sprite {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = 'rgba(120, 200, 255, 0.85)';
+    ctx.font = '24px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
+    const sprite = new THREE.Sprite(material);
+    sprite.scale.set(4, 0.5, 1);
+    return sprite;
+  }
+
+  /**
+   * Toggle visibility of the background spatial reference graph.
+   */
+  public setSpatialGraphVisible(visible: boolean): void {
+    if (this.spatialGraph) this.spatialGraph.visible = visible;
+  }
+
+  /**
    * Cleanup
    */
   public dispose(): void {
     this.stop();
+    this.viewHelper.dispose();
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }

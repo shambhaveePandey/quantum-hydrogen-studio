@@ -1,6 +1,7 @@
 import './main.css';
 import { VisualizationEngine } from './core/engine/renderer';
 import { ControlPanel } from './ui/controls/quantum-state-control';
+import { PhysicsExplainer } from './ui/panels/physics-explainer';
 import { createHydrogenAtom, createExcitedHydrogenAtom } from './physics/orbitals/hydrogen';
 
 // Catch any uncaught promise rejections or JS errors and show them on screen
@@ -62,6 +63,23 @@ async function init(): Promise<void> {
     return;
   }
 
+  // --- physics explainer (in-app maths + references) ---------------------------
+  let explainer: PhysicsExplainer | null = null;
+  try {
+    explainer = new PhysicsExplainer('physics-explainer');
+    explainer.update({ n: 1, l: 0, m: 0 });
+  } catch (err) {
+    console.error('Physics explainer init failed:', err);
+  }
+
+  // --- spatial-grid toggle (event-delegated; survives control re-renders) ------
+  document.addEventListener('change', (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target && target.id === 'toggle-spatial-grid') {
+      engine.setSpatialGraphVisible(target.checked);
+    }
+  });
+
   // --- control panel -----------------------------------------------------------
   try {
     const controlPanel = new ControlPanel('quantum-controls');
@@ -79,6 +97,7 @@ async function init(): Promise<void> {
         engine.renderForceField(force_fields[0], field_intensity);
       }
       engine.updateSettings({ field_intensity });
+      explainer?.update({ n, l, m });
     });
   } catch (err) {
     // Controls failing is non-fatal — log but keep the canvas running

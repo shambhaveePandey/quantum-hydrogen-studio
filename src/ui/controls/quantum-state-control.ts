@@ -99,6 +99,16 @@ export class ControlPanel {
           </label>
         </div>
 
+        <div class="control-section">
+          <h3>Scene</h3>
+          <div class="force-field-toggles">
+            <label>
+              <input type="checkbox" id="toggle-spatial-grid" checked>
+              Spatial grid (Planck-scale background)
+            </label>
+          </div>
+        </div>
+
       </div>
     `;
     

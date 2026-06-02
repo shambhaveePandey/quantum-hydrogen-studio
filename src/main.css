@@ -352,6 +352,89 @@ label input[type="range"]::-moz-range-track {
 
 
 /* ─────────────────────────────────────────────
+   Right panel: info (auto) + physics explainer (scrolls)
+   ───────────────────────────────────────────── */
+.panel-right { flex: 0 0 300px; }
+
+/* The quantum-info body sizes to content; the explainer takes the rest */
+.panel-right #quantum-info { flex: 0 0 auto; overflow: visible; }
+.panel-right #physics-explainer { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+
+.panel-title-sub {
+  font-size: var(--fs-base);
+  border-top: 1px solid var(--color-border);
+}
+
+/* ── Physics explainer ─────────────────────────────────────── */
+.physics-explainer { padding: var(--sp-sm) var(--sp-md) var(--sp-md); }
+
+.pe-live {
+  background: linear-gradient(135deg, rgba(0,170,255,.10), rgba(0,212,255,.04));
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  padding: var(--sp-sm) var(--sp-md);
+  margin-bottom: var(--sp-md);
+}
+.pe-live-label {
+  display: block;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  color: var(--color-accent);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-bottom: var(--sp-xs);
+}
+#pe-live-text { font-size: var(--fs-xs); line-height: 1.55; color: var(--color-text-secondary); }
+#pe-live-text strong { color: var(--color-text); }
+
+.pe-block {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--sp-sm);
+  background-color: var(--color-background);
+}
+.pe-block > summary {
+  cursor: pointer;
+  padding: var(--sp-sm) var(--sp-md);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-accent);
+  list-style: none;
+  user-select: none;
+}
+.pe-block > summary::-webkit-details-marker { display: none; }
+.pe-block > summary::before { content: '▸ '; color: var(--color-accent-secondary); }
+.pe-block[open] > summary::before { content: '▾ '; }
+.pe-body { padding: 0 var(--sp-md) var(--sp-md); font-size: var(--fs-xs); line-height: 1.6; color: var(--color-text-secondary); }
+.pe-body p { margin-top: var(--sp-sm); }
+.pe-body em { color: var(--color-text); font-style: italic; }
+.pe-eq {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--color-accent);
+  background: rgba(0,170,255,.08);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-xs) var(--sp-sm);
+  margin-top: var(--sp-sm);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.pe-list { margin: var(--sp-sm) 0 0 var(--sp-md); }
+.pe-list li { margin-bottom: 2px; }
+.pe-effect { color: var(--color-text); }
+.pe-effect strong { color: var(--color-accent-secondary); }
+.pe-ref {
+  display: inline-block;
+  margin-top: var(--sp-sm);
+  font-size: var(--fs-xs);
+  color: var(--color-accent);
+  text-decoration: none;
+}
+.pe-ref:hover { text-decoration: underline; }
+
+
+/* ─────────────────────────────────────────────
    Error state (shown if Three.js init fails)
    ───────────────────────────────────────────── */
 .error-state {
@@ -456,6 +539,12 @@ label input[type="range"]::-moz-range-track {
     max-height: none;
   }
   .panel-body { overflow-y: visible; }
+
+  /* Physics explainer flows with the page on mobile (no inner scroll box) */
+  .panel-right #physics-explainer {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
 }
 
 
