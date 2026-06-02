@@ -6,6 +6,18 @@
 [![Built with Three.js](https://img.shields.io/badge/3D-Three.js-black)](https://threejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Build-Vite-646cff)](https://vitejs.dev/)
+[![Deploy to GitHub Pages](https://github.com/shambhaveePandey/quantum-hydrogen-studio/actions/workflows/deploy.yml/badge.svg)](https://github.com/shambhaveePandey/quantum-hydrogen-studio/actions/workflows/deploy.yml)
+
+**🔗 Live demo: [shambhaveepandey.github.io/quantum-hydrogen-studio](https://shambhaveepandey.github.io/quantum-hydrogen-studio/)**
+
+---
+
+## Documentation
+
+| Document | For whom | Link |
+|----------|----------|------|
+| **User Instruction Manual** | End users / students / educators | [Open in Notion](https://www.notion.so/373ff97a754181da937fd5f851edd6dc) |
+| **API Documentation** | Developers / contributors | [Open in Notion](https://www.notion.so/373ff97a754181d9b09bdf8932684bf9) |
 
 ---
 
@@ -72,8 +84,10 @@ Wave functions are based on the exact hydrogen solutions to the Schrödinger equ
 ```
 
 - Radial wave function `R_nl` built from associated Laguerre polynomials
-- Electron positions sampled from |ψ|² via the exponential radial distribution
-- All physical constants use **CODATA 2022** recommended values (see `src/physics/constants/particles.ts`)
+- Electron positions sampled from |ψ|² via an exponential radial approximation (a teaching simplification — see *Accuracy* below)
+- Physical constants use **NIST / CODATA 2018 & PDG** recommended values (see `src/physics/constants/particles.ts`)
+
+> **Accuracy note:** This studio is built for intuition and teaching, not laboratory-grade simulation. Electron positions use an exponential radial approximation rather than full rejection sampling of every `|ψ_nlm|²`, and the probability shells are simplified reference surfaces.
 
 **Key references:**
 - Griffiths, D. J. — *Introduction to Quantum Mechanics* (3rd ed.)
@@ -112,7 +126,8 @@ quantum-hydrogen-studio/
 │   │   └── quantum-state-control.ts # n / l / m sliders + force-field checkboxes
 │   └── types/particle.ts            # Shared TypeScript interfaces
 ├── public/
-│   └── favicon.svg
+│   └── favicon.svg                  # App icon (atom motif)
+├── .github/workflows/deploy.yml     # CI: build + publish to gh-pages
 ├── tsconfig.json
 ├── vite.config.ts
 └── package.json
@@ -145,6 +160,20 @@ Open **`http://localhost:5173`** in your browser (Chrome, Edge, Firefox — any 
 npm run build   # outputs to dist/
 npm run preview # serve the production build locally
 ```
+
+---
+
+## Deployment
+
+The app is hosted on **GitHub Pages** at [shambhaveepandey.github.io/quantum-hydrogen-studio](https://shambhaveepandey.github.io/quantum-hydrogen-studio/).
+
+Deployment is fully automated via GitHub Actions (`.github/workflows/deploy.yml`):
+
+1. Every push to `main` triggers a type-check + Vite production build.
+2. The built `dist/` output is published to the **`gh-pages`** branch via `peaceiris/actions-gh-pages`.
+3. **GitHub Pages is configured to serve from the `gh-pages` branch** (Settings → Pages → Source = `gh-pages`, `/` root).
+
+> **Important:** Pages must serve the built `gh-pages` branch — **not** `main`. The `main` branch contains raw TypeScript source (`index.html` loads `/src/main.ts`), which the browser cannot execute directly; serving it produces a blank page. Vite's `base: '/quantum-hydrogen-studio/'` ensures every asset URL is correctly prefixed for project-page hosting.
 
 ---
 
