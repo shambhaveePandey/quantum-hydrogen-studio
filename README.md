@@ -83,11 +83,11 @@ Wave functions are based on the exact hydrogen solutions to the Schrödinger equ
 ψ(n,l,m) = R_nl(r) · Y_l^m(θ, φ)
 ```
 
-- Radial wave function `R_nl` built from associated Laguerre polynomials
-- Electron positions sampled from |ψ|² via an exponential radial approximation (a teaching simplification — see *Accuracy* below)
+- Radial wave function `R_nl` built from the generalized Laguerre polynomials `L_{n-l-1}^{2l+1}` (so radial nodes / concentric shells appear correctly)
+- Electron positions sampled from the exact `|ψ_nlm|² = |R_nl(r)|²·|Y_lm(θ,φ)|²`: the radius by inverse-CDF sampling of `P(r)=r²|R_nl|²`, the direction by rejection sampling the real spherical harmonics `|Y_lm(θ,φ)|²` (see `createOrbitalSampler` in `src/physics/orbitals/hydrogen.ts`)
 - Physical constants use **NIST / CODATA 2018 & PDG** recommended values (see `src/physics/constants/particles.ts`)
 
-> **Accuracy note:** This studio is built for intuition and teaching, not laboratory-grade simulation. Electron positions use an exponential radial approximation rather than full rejection sampling of every `|ψ_nlm|²`, and the probability shells are simplified reference surfaces.
+> **Accuracy note:** This studio is built for intuition and teaching, not laboratory-grade simulation. Electron positions are sampled from the exact hydrogen `|ψ_nlm|²` (radial nodes and angular lobes included); the wireframe probability shells remain simplified reference surfaces scaled to ⟨r⟩.
 
 **Key references:**
 - Griffiths, D. J. — *Introduction to Quantum Mechanics* (3rd ed.)
@@ -196,7 +196,6 @@ Deployment is fully automated via GitHub Actions (`.github/workflows/deploy.yml`
 
 Contributions welcome. Areas of particular interest:
 
-- **Accurate orbital sampling** — replace the exponential approximation with a full rejection-sampling implementation of |ψ_nlm|²
 - **Quark sub-structure** — render the proton's uud quark content with colour-flux tubes
 - **Mobile / touch** — optimise controls and layout for small screens
 - **Accessibility** — ARIA labels for the info panel and controls

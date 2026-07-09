@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
 import { Particle, VisualizationSettings, ForceType, HydrogenAtomConfiguration } from '../../types/particle';
+import { createOrbitalSampler } from '../../physics/orbitals/hydrogen';
 
 export class VisualizationEngine {
   private scene: THREE.Scene;
@@ -211,15 +212,15 @@ export class VisualizationEngine {
   
   /**
    * Render the electron orbital cloud as a Monte-Carlo point cloud sampled
-   * from the hydrogen probability density |ψ_nlm|².
+   * from the exact hydrogen probability density |ψ_nlm|² = |R_nl(r)|²·|Y_lm(θ,φ)|².
    *
-   * Radial part: the RADIAL PROBABILITY P(r) = r²·|R_nl(r)|² (not |R|² alone).
-   *   For the 1s state P(r) ∝ r²·e^(−2r/a₀), a Gamma distribution peaking at
-   *   the most-probable radius r = a₀ — NOT at the nucleus. We sample it with a
-   *   sum-of-exponentials trick (Gamma(shape) ≈ Σ of `shape` exponentials).
-   * Angular part: |Y_lm(θ,φ)|² gives the orbital its characteristic shape
-   *   (s = spherical, p = two-lobed, d = four-lobed) via rejection sampling.
-   * Scale: the orbital size grows as ≈ n²·a₀, the correct hydrogen scaling.
+   * The sampling lives in the physics module (`createOrbitalSampler`) so the
+   * cloud and the electron marker share one correct implementation:
+   *   • Radial part uses the true R_nl (generalized Laguerre polynomial), so
+   *     the (n−l−1) radial NODES appear as concentric shells (2s, 3s, 3p, …).
+   *   • Angular part uses the real spherical harmonics |Y_lm(θ,φ)|² including
+   *     the φ dependence, so p/d orbitals form true lobes, not φ-averaged rings.
+   *   • Scale grows as ≈ n²·a₀, the correct hydrogen scaling.
    */
   private renderElectronCloud(hydrogenConfig: HydrogenAtomConfiguration): void {
     if (this.orbitMesh) {
@@ -231,38 +232,16 @@ export class VisualizationEngine {
     const l = Math.max(0, Math.min(hydrogenConfig.orbital_angular_momentum, n - 1));
     const m = Math.max(-l, Math.min(hydrogenConfig.magnetic_quantum_number, l));
 
-    // Visualization Bohr radius (Ångström-scaled for a comfortable camera frame)
+    // Visualization Bohr radius (Ångström-scaled for a comfortable camera frame).
+    // The physics sampler is scale-free, so passing the scene-unit a₀ places
+    // the cloud directly in scene coordinates.
     const a0 = 0.6;
-    // Exponential decay length of |R_nl|² scales as n·a₀
-    const decay = n * a0;
+    const sampleOrbitalPoint = createOrbitalSampler(n, l, m, a0);
 
-    const points: THREE.Vector3[] = [];
     const samples = 1400;
-    let attempts = 0;
-    const maxAttempts = samples * 40;
-
-    while (points.length < samples && attempts < maxAttempts) {
-      attempts++;
-
-      // --- Radial sample via Gamma-like distribution P(r) ∝ r^(2+2l)·e^(−2r/(n·a₀))
-      // Sum of (l+2) exponentials approximates the radial-probability peak that
-      // moves outward with n and l, reproducing the most-probable-radius shift.
-      let r = 0;
-      const radialShape = l + 2; // 1s → 2 exponentials → peak away from nucleus
-      for (let k = 0; k < radialShape; k++) {
-        r += -Math.log(Math.random());
-      }
-      r *= decay / 2; // normalise so the 1s peak sits near a₀
-
-      // --- Angular sample with |Y_lm|² rejection sampling
-      const theta = Math.acos(2 * Math.random() - 1); // uniform in cos θ
-      const phi = 2 * Math.PI * Math.random();
-      const angularProb = this.angularProbability(l, m, theta);
-      if (Math.random() > angularProb) continue; // reject
-
-      const x = r * Math.sin(theta) * Math.cos(phi);
-      const y = r * Math.sin(theta) * Math.sin(phi);
-      const z = r * Math.cos(theta);
+    const points: THREE.Vector3[] = [];
+    for (let i = 0; i < samples; i++) {
+      const [x, y, z] = sampleOrbitalPoint();
       points.push(new THREE.Vector3(x, y, z));
     }
 
@@ -280,30 +259,6 @@ export class VisualizationEngine {
     this.scene.add(pointsMesh);
   }
 
-  /**
-   * Normalised |Y_lm(θ)|² shape factor (φ-independent magnitude) used for
-   * rejection sampling the angular distribution. Returns a value in [0,1].
-   *   l=0 (s): isotropic sphere
-   *   l=1 (p): m=0 → cos²θ (dumbbell along z); |m|=1 → sin²θ (torus)
-   *   l=2 (d): m=0 → (3cos²θ−1)²; |m|=1 → sin²θcos²θ; |m|=2 → sin⁴θ
-   */
-  private angularProbability(l: number, m: number, theta: number): number {
-    const c = Math.cos(theta);
-    const s = Math.sin(theta);
-    const am = Math.abs(m);
-    if (l === 0) return 1;
-    if (l === 1) {
-      return am === 0 ? c * c : s * s;
-    }
-    if (l === 2) {
-      if (am === 0) { const v = (3 * c * c - 1); return (v * v) / 4; }
-      if (am === 1) return s * s * c * c * 4;
-      return s * s * s * s; // |m|=2
-    }
-    // l ≥ 3 (f and beyond): approximate with an l-lobed band, keeps it lively
-    return Math.pow(Math.abs(Math.cos((l) * theta)), 2);
-  }
-  
   /**
    * Render probability-density reference shells.
    *
