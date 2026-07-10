@@ -318,6 +318,180 @@ label input[type="range"]::-moz-range-track {
   accent-color: var(--color-accent);
 }
 
+/* Coloured legend dot inside particle-visibility toggles */
+.vis-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.section-note {
+  font-size: var(--fs-xs);
+  color: var(--color-text-secondary);
+  margin: 0 0 2px;
+}
+
+
+/* ─────────────────────────────────────────────
+   Orbital badge + quick presets
+   ───────────────────────────────────────────── */
+.orbital-badge {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-sm);
+  padding: var(--sp-sm) 10px;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.orbital-badge-name {
+  font-size: 22px;
+  font-weight: var(--fw-bold);
+  color: var(--color-accent);
+}
+.orbital-badge-sub {
+  font-size: var(--fs-xs);
+  color: var(--color-text-secondary);
+}
+
+.presets-label {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--sp-sm);
+}
+.presets-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-sm);
+}
+.preset-btn {
+  min-width: 44px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-light);
+  color: var(--color-text);
+  font: var(--fw-medium) var(--fs-base) var(--font-base);
+  cursor: pointer;
+  transition: background-color .15s, border-color .15s;
+}
+.preset-btn:hover {
+  background-color: rgba(0,212,255,.15);
+  border-color: var(--color-accent);
+}
+.preset-btn.active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-background);
+  font-weight: var(--fw-bold);
+}
+
+
+/* ─────────────────────────────────────────────
+   In-viewer overlays (particle inspect, recenter, hint)
+   ───────────────────────────────────────────── */
+.particle-overlay {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  max-width: 230px;
+  background: rgba(10,14,39,.94);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-lg);
+  padding: 10px 12px;
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  color: var(--color-text);
+  z-index: 5;
+  box-shadow: 0 4px 12px rgba(0,0,0,.5);
+}
+.particle-overlay-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--sp-sm);
+}
+.particle-overlay-head strong {
+  color: var(--color-accent);
+  font-size: 14px;
+}
+#particle-overlay-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0;
+}
+#particle-overlay-body { margin-top: var(--sp-sm); }
+#particle-overlay-body div { margin-top: 2px; }
+#particle-overlay-body strong { color: var(--color-text-secondary); }
+
+.recenter-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  padding: 7px 12px;
+  background: rgba(10,14,39,.9);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  color: var(--color-accent);
+  font: var(--fw-medium) var(--fs-sm) var(--font-base);
+  cursor: pointer;
+  transition: background-color .15s;
+}
+.recenter-btn:hover { background-color: rgba(0,212,255,.18); }
+
+.viewer-hint {
+  position: absolute;
+  bottom: 8px;
+  right: 10px;
+  max-width: 60%;
+  text-align: right;
+  font-size: 10px;
+  color: rgba(176,184,212,.7);
+  pointer-events: none;
+}
+
+
+/* ─────────────────────────────────────────────
+   Viewer readout chips (below the 3D canvas)
+   ───────────────────────────────────────────── */
+.viewer-chips {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px var(--sp-lg);
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  overflow-x: auto;
+}
+.chip {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  padding: var(--sp-sm) var(--sp-md);
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+}
+.chip-key { color: var(--color-accent); font-weight: var(--fw-bold); }
+.chip-val { color: var(--color-text); }
+
 
 /* ─────────────────────────────────────────────
    Info panel (right panel body)

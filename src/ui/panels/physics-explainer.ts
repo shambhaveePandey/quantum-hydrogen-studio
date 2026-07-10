@@ -50,17 +50,37 @@ export class PhysicsExplainer {
           <p id="pe-live-text">Adjust n, l, m to see how the visualisation responds.</p>
         </div>
 
+        <details class="pe-block">
+          <summary>0 · Nucleus — quarks &amp; gluons</summary>
+          <div class="pe-body">
+            <p>Protons and neutrons aren't fundamental — each is 3 quarks bound by
+            the strong force, carried by gluons. A proton is <strong>uud</strong>
+            (2 up + 1 down quark, charge +1e); a neutron is <strong>udd</strong>
+            (charge 0). Protium (¹H, this app's default) has a nucleus of a single
+            proton and no neutron.</p>
+            <p>The orange flux-tube lines in the 3D view are a simplified stand-in
+            for gluon exchange — real confinement grows the binding energy with
+            separation instead of a fixed-length line.</p>
+            <p class="pe-effect"><strong>Viewer:</strong> click any quark sphere or
+            the electron to see its real mass, charge and spin.</p>
+            <a class="pe-ref" href="https://pdg.lbl.gov/" target="_blank" rel="noopener">Ref: Particle Data Group ↗</a>
+          </div>
+        </details>
+
         <details class="pe-block" open>
           <summary>1 · Electron cloud — radial probability P(r)</summary>
           <div class="pe-body">
-            <code class="pe-eq">P(r) = r²·|R<sub>nl</sub>(r)|² ∝ r<sup>2l+2</sup>·e<sup>−2r/(n·a₀)</sup></code>
-            <p>The blue point cloud is Monte-Carlo sampled from the <em>radial
-            probability</em>, not |ψ|² alone. The r² factor (shell surface area)
-            pushes the most-probable radius <strong>away</strong> from the nucleus
-            — exactly a₀ for the 1s state.</p>
-            <p class="pe-effect"><strong>Viewer:</strong> raising <em>n</em> moves the
-            cloud's peak outward (~n²·a₀), so the orbital visibly swells; raising
-            <em>l</em> shifts the peak further out and changes the sampling shape.</p>
+            <code class="pe-eq">P(r) = r²·|R<sub>nl</sub>(r)|²,  R<sub>nl</sub> ∝ ρ<sup>l</sup>·e<sup>−ρ/2</sup>·L<sub>n−l−1</sub><sup>2l+1</sup>(ρ),  ρ = 2r/(n·a₀)</code>
+            <p>The blue point cloud is drawn from the <em>exact</em> radial
+            probability by inverse-CDF sampling — not a smooth approximation.
+            R<sub>nl</sub> carries the generalized Laguerre polynomial
+            L<sub>n−l−1</sub><sup>2l+1</sup>, which has <strong>n−l−1 radial
+            nodes</strong>. Those zeros appear as concentric shells (2s = inner
+            sphere + outer shell, 3s = three shells, …). The r² factor pushes the
+            most-probable radius away from the nucleus — exactly a₀ for 1s.</p>
+            <p class="pe-effect"><strong>Viewer:</strong> raising <em>n</em> swells the
+            cloud (~n²·a₀) and adds shells; raising <em>l</em> removes nodes and
+            pushes the outer shell further out.</p>
             <a class="pe-ref" href="http://hyperphysics.phy-astr.gsu.edu/hbase/quantum/hydr.html" target="_blank" rel="noopener">Ref: HyperPhysics — radial probability ↗</a>
           </div>
         </details>
@@ -68,16 +88,17 @@ export class PhysicsExplainer {
         <details class="pe-block">
           <summary>2 · Orbital shape — spherical harmonics |Y<sub>lm</sub>|²</summary>
           <div class="pe-body">
-            <code class="pe-eq">accept if  random() ≤ |Y<sub>lm</sub>(θ)|²</code>
-            <p>The angular direction of each point is accepted/rejected against the
-            squared spherical harmonic, giving each orbital its true shape:</p>
+            <code class="pe-eq">accept if  random() ≤ |Y<sub>lm</sub>(θ, φ)|²</code>
+            <p>The direction of each point is accepted/rejected against the squared
+            <em>real</em> spherical harmonic — including its φ dependence — so the
+            orbitals form true lobes rather than φ-averaged rings:</p>
             <ul class="pe-list">
               <li><strong>s</strong> (l=0): isotropic sphere</li>
-              <li><strong>p</strong> (l=1): m=0 → cos²θ dumbbell along z; |m|=1 → sin²θ ring</li>
-              <li><strong>d</strong> (l=2): (3cos²θ−1)² and sin²θcos²θ, sin⁴θ lobes</li>
+              <li><strong>p</strong> (l=1): m=0 → dumbbell along z; |m|=1 → lobes in the xy-plane (p<sub>x</sub>, p<sub>y</sub>)</li>
+              <li><strong>d</strong> (l=2): (3cos²θ−1) axial cloud; |m|=1,2 → four-lobed cloverleaves</li>
             </ul>
             <p class="pe-effect"><strong>Viewer:</strong> changing <em>l</em> and
-            <em>m</em> reshapes the cloud from a sphere to dumbbells, rings and
+            <em>m</em> reshapes the cloud from a sphere to dumbbells and
             cloverleaves — rotate with the ViewCube to inspect the lobes.</p>
             <a class="pe-ref" href="http://hyperphysics.phy-astr.gsu.edu/hbase/quantum/hydwf.html" target="_blank" rel="noopener">Ref: HyperPhysics — hydrogen wavefunctions ↗</a>
           </div>
@@ -136,18 +157,23 @@ export class PhysicsExplainer {
     const { n, l, m } = state;
     const name = `${n}${ORBITAL_LETTERS[l] ?? '?'}`;
     const meanRadius = (0.529 / 2) * (3 * n * n - l * (l + 1));
+    const nodes = n - l - 1; // number of radial nodes → concentric shells
     let shapeNote: string;
     if (l === 0) shapeNote = 'a spherical (isotropic) cloud';
-    else if (l === 1) shapeNote = m === 0 ? 'a dumbbell aligned along the z-axis' : 'a ring/torus in the xy-plane';
+    else if (l === 1) shapeNote = m === 0 ? 'a dumbbell aligned along the z-axis' : 'two lobes in the xy-plane';
     else if (l === 2) shapeNote = m === 0 ? 'a z-aligned lobe with an equatorial ring' : 'a four-lobed cloverleaf';
     else shapeNote = 'a multi-lobed high-l cloud';
+
+    const shellNote = nodes > 0
+      ? ` with ${nodes} radial node${nodes > 1 ? 's' : ''} (${nodes + 1} concentric shells)`
+      : ' (a single nodeless shell)';
 
     const text = document.getElementById('pe-live-text');
     if (text) {
       text.innerHTML =
-        `<strong>${name}</strong> (n=${n}, l=${l}, m=${m}): the cloud samples ` +
-        `P(r) ∝ r<sup>${2 * l + 2}</sup>·e<sup>−2r/${n}a₀</sup>, peaking near ` +
-        `⟨r⟩ ≈ ${meanRadius.toFixed(2)} Å, and the angular factor produces ` +
+        `<strong>${name}</strong> (n=${n}, l=${l}, m=${m}): the cloud samples the exact ` +
+        `P(r) = r²·|R<sub>${n}${l}</sub>|²${shellNote}, peaking near ` +
+        `⟨r⟩ ≈ ${meanRadius.toFixed(2)} Å, and the real |Y<sub>${l}${m}</sub>|² factor produces ` +
         `${shapeNote}. Reference shells scale to ⟨r⟩ and the camera re-frames.`;
     }
   }

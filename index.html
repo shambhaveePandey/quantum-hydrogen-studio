@@ -43,17 +43,35 @@
       <h2 class="panel-title">3D Particle Visualization</h2>
       <div class="renderer-container" id="renderer-container">
         <div class="renderer-loading" id="renderer-loading">Initialising 3D engine…</div>
+
+        <!-- Clicked-particle properties overlay (hidden until a hit) -->
+        <div class="particle-overlay" id="particle-overlay" hidden>
+          <div class="particle-overlay-head">
+            <strong id="particle-overlay-title"></strong>
+            <button type="button" id="particle-overlay-close" aria-label="Close">×</button>
+          </div>
+          <div id="particle-overlay-body"></div>
+        </div>
+
+        <!-- Recenter camera -->
+        <button type="button" class="recenter-btn" id="recenter-btn">⌖ Recenter view</button>
+
+        <!-- Interaction hint -->
+        <div class="viewer-hint">Click the electron or a quark to inspect its properties · drag to orbit · scroll to zoom</div>
+      </div>
+
+      <!-- Live orbital / energy readout chips -->
+      <div class="viewer-chips" id="viewer-chips">
+        <div class="chip"><span class="chip-key">Orbital</span><span class="chip-val" id="chip-orbital">1s (n=1, l=0, m=0)</span></div>
+        <div class="chip"><span class="chip-key">Binding Energy</span><span class="chip-val" id="chip-energy">−13.61 eV</span></div>
+        <div class="chip"><span class="chip-key">Bohr Radius</span><span class="chip-val" id="chip-bohr">0.53 Å</span></div>
+        <div class="chip"><span class="chip-key">Active Fields</span><span class="chip-val" id="chip-fields">electromagnetic</span></div>
       </div>
     </section>
 
-    <!-- RIGHT PANEL · live orbital & particle info readout + physics explainer -->
+    <!-- RIGHT PANEL · physics model & references -->
     <aside class="panel panel-right" id="info-panel">
-      <h2 class="panel-title">Quantum State Info</h2>
-      <div class="panel-body" id="quantum-info">
-        <p class="info-placeholder">Loading quantum information…</p>
-      </div>
-
-      <h2 class="panel-title panel-title-sub">Physics Model &amp; References</h2>
+      <h2 class="panel-title">Physics Model &amp; References</h2>
       <div class="panel-body" id="physics-explainer"></div>
     </aside>
 
