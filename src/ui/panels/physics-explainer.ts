@@ -50,6 +50,23 @@ export class PhysicsExplainer {
           <p id="pe-live-text">Adjust n, l, m to see how the visualisation responds.</p>
         </div>
 
+        <details class="pe-block">
+          <summary>0 · Nucleus — quarks &amp; gluons</summary>
+          <div class="pe-body">
+            <p>Protons and neutrons aren't fundamental — each is 3 quarks bound by
+            the strong force, carried by gluons. A proton is <strong>uud</strong>
+            (2 up + 1 down quark, charge +1e); a neutron is <strong>udd</strong>
+            (charge 0). Protium (¹H, this app's default) has a nucleus of a single
+            proton and no neutron.</p>
+            <p>The orange flux-tube lines in the 3D view are a simplified stand-in
+            for gluon exchange — real confinement grows the binding energy with
+            separation instead of a fixed-length line.</p>
+            <p class="pe-effect"><strong>Viewer:</strong> click any quark sphere or
+            the electron to see its real mass, charge and spin.</p>
+            <a class="pe-ref" href="https://pdg.lbl.gov/" target="_blank" rel="noopener">Ref: Particle Data Group ↗</a>
+          </div>
+        </details>
+
         <details class="pe-block" open>
           <summary>1 · Electron cloud — radial probability P(r)</summary>
           <div class="pe-body">
